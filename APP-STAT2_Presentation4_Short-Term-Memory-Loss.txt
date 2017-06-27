@@ -1,0 +1,49 @@
+FILENAME REFFILE '/home/jrasmusvorrath0/monkey.csv';
+
+PROC IMPORT DATAFILE=REFFILE
+	DBMS=CSV
+	OUT=monkeyz;
+	GETNAMES=YES;
+RUN;
+
+PROC CONTENTS DATA=monkeyz; RUN;
+
+proc print data = monkeyz; run;
+
+proc glm data = monkeyz;
+class Treatment Memory Week;
+model NewPerCorrect = Treatment Week Treatment*Week;
+estimate 'Short-Term Memory: Control v. Treated (GLM: Standard Model)'
+	Treatment -1 1
+	Treatment*Week -.5 -.5 0 0 0 .5 .5 0 0 0;
+estimate 'Week 2: Control v. Treated (GLM: Standard Model)'
+	Treatment -1 1
+	Treatment*Week -1 0 0 0 0 1 0 0 0 0;
+*estimate 'Week 2 v. Week 12: Control v. Treated (GLM: Standard Model)'
+	Treatment -1 1
+	Treatment*Week -.5 0 0 -.5 0 .5 0 0 .5 0;
+estimate 'Week 2 v. Week 12: Treated (GLM: Standard Model)'
+	Week -1 0 0 1 0
+	Treatment*Week 0 0 0 0 0 -1 0 0 1 0;
+lsmeans Treatment*Week / pdiff tdiff adjust = Tukey;
+run;
+
+proc mixed data = monkeyz;
+class Treatment Memory Monkey Week;
+model NewPerCorrect = Treatment Week Treatment*Week;
+repeated Week / type = CS subject = Monkey;
+estimate 'Short-Term Memory: Control v. Treated (Mixed: Repeated Measures)'
+	Treatment -1 1
+	Treatment*Week -.5 -.5 0 0 0 .5 .5 0 0 0;
+estimate 'Week 2: Control v. Treated (Mixed: Repeated Measures)'
+	Treatment -1 1
+	Treatment*Week -1 0 0 0 0 1 0 0 0 0;
+*estimate 'Week 2 v. Week 12: Control v. Treated (Mixed: Repeated Measures)'
+	Treatment -1 1
+	Treatment*Week -.5 0 0 -.5 0 .5 0 0 .5 0;
+estimate 'Week 2 v. Week 12: Treated (Mixed: Repeated Measures)'
+	Week -1 0 0 1 0
+	Treatment*Week 0 0 0 0 0 -1 0 0 1 0;
+lsmeans Treatment*Week / pdiff tdiff adjust = Tukey;
+run;
+
