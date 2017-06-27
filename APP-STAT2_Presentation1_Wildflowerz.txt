@@ -1,0 +1,319 @@
+FILENAME REFFILE '/home/jrasmusvorrath0/Wildflower.csv';
+
+PROC IMPORT DATAFILE=REFFILE
+	DBMS=CSV
+	OUT=wildflowerz;
+	GETNAMES=YES;
+RUN;
+
+PROC CONTENTS DATA=wildflowerz; RUN;
+
+
+*proc print data = wildflowerz;* run;
+
+data wildflower; set wildflowerz;
+RandNumber = ranuni(1); run;
+
+
+
+*data wildflower;
+*infile 'C:/Users/jkras/Desktop/Unit2Exercise_2/Unit2Exercise/Wildflower.csv' dlm=',' firstobs=2 missover;
+*input  Year Region $ Sep Oct Nov Dec Jan Feb Mar Total Rating $ Score;
+*RandNumber=ranuni(1);
+*run;
+
+
+
+*converting the Region categories into dummy variables;
+data wildflower2;
+set wildflower;
+DumBaj=(Region='baja');
+DumCol=(Region='colo');
+DumMoj=(Region='moja');
+DumUpl=(Region='upla');
+Total2=Total*Total;
+ArcSinH_Score = ARSINH(Score);
+LOG1PX_Score = LOG1PX(Score);
+CubeRoot_Score = Score**(1/3);
+LOG1PX_Jan = LOG1PX(Jan);
+LOG1PX_Feb = LOG1PX(Feb);
+LOG1PX_Mar = LOG1PX(Mar);
+LOG1PX_Sep = LOG1PX(Sep);
+LOG1PX_Oct = LOG1PX(Oct);
+LOG1PX_Nov = LOG1PX(Nov);
+LOG1PX_Dec = LOG1PX(Dec);
+LOG1PX_Total = LOG1PX(Total);
+LOG1PX_Total2 = LOG1PX(Total2);
+run;
+
+*proc print data=wildflower;* run;
+
+*proc print data = wildflower2;* run;
+
+data wildflower3; set wildflower2;
+if _n_ = 106 then delete; run;
+
+
+
+
+
+
+
+************************************************************************************;
+
+proc sgscatter data=wildflower2;
+matrix Score Oct Nov Dec Total / diagonal=(histogram) group=Region;
+run;
+
+proc sgscatter data=wildflower2;
+matrix Score Jan Feb Mar Sep / diagonal=(histogram) group=Region;
+run;
+
+
+proc sgscatter data=wildflower2;
+matrix Score Jan Feb Mar Sep Oct Nov Dec Total  / diagonal=(histogram) group=Region;
+run;
+
+
+
+
+
+
+*proc sgscatter data=wildflower2;
+*matrix CubeRoot_Score Jan Feb Mar Sep Oct Nov Dec Total  / diagonal=(histogram) group=Region;
+*run;
+
+*proc sgscatter data=wildflower2;
+*matrix LOG1PX_Score Jan Feb Mar Sep Oct Nov Dec Total  / diagonal=(histogram) group=Region;
+*run;
+
+*proc sgscatter data=wildflower2;
+*matrix LOG1PX_Score Jan Feb Mar Sep Oct Nov Dec Total2  / diagonal=(histogram) group=Region;
+*run;
+
+*proc sgscatter data=wildflower2;
+*matrix LOG1PX_Score LOG1PX_Jan LOG1PX_Feb LOG1PX_Mar LOG1PX_Sep LOG1PX_Oct LOG1PX_Nov LOG1PX_Dec Total2 / diagonal=(histogram) group=Region;
+*run;
+
+proc sgscatter data=wildflower2;
+matrix LOG1PX_Score LOG1PX_Jan LOG1PX_Feb LOG1PX_Mar LOG1PX_Sep LOG1PX_Oct LOG1PX_Nov LOG1PX_Dec LOG1PX_Total LOG1PX_Total2 / diagonal=(histogram) group=Region;
+run;
+
+*proc sgscatter data=wildflower2;
+*matrix ArcSinH_Score Jan Feb Mar Sep Oct Nov Dec Total  / diagonal=(histogram) group=Region;
+*run;
+
+
+
+
+*proc univariate data = wildflower2;
+*by Region;
+*var Score;
+*histogram Score / Normal Kernel;
+*run;
+
+*proc means data = wildflower2;
+*by Region;
+*var Score;* run;
+
+
+
+************************************************************************************;
+*First pass analysis by fitting all the predictors in the model                     ;
+
+
+proc reg data = wildflower2 outest=WildResults plots(label) = (rstudentbyleverage cooksd);
+model Score = DumCol DumMoj DumUpl Sep Oct Nov Dec Jan Feb Mar Total / AIC VIF CLI; *CORRB INFLUENCE CLB;
+run;
+quit;
+
+
+
+
+
+
+
+
+*proc reg data = wildflower2 outest=WildResults2 plots(label) = (rstudentbyleverage cooksd);
+*model LOG1PX_Score = DumCol DumMoj DumUpl Sep Oct Nov Dec Jan Feb Mar / AIC VIF CLI NOINT; *CORRB INFLUENCE CLB;
+*run;
+*quit;
+
+*proc reg data = wildflower3 outest=WildResults3 plots(label) = (rstudentbyleverage cooksd);
+*model LOG1PX_Score = DumCol DumMoj DumUpl Sep Oct Nov Dec Jan Feb Mar / AIC VIF CLI NOINT; *CORRB INFLUENCE CLB;
+*run;
+*quit;
+
+*proc reg data = wildflower2 outest=WildResults4 plots(label) = (rstudentbyleverage cooksd);
+*model LOG1PX_Score = DumCol DumMoj DumUpl Sep Oct Nov Dec Jan Feb Mar Total2 / AIC VIF CLI NOINT; *CORRB INFLUENCE CLB;
+*run;
+*quit;
+
+*proc reg data = wildflower3 outest=WildResults5 plots(label) = (rstudentbyleverage cooksd);
+*model LOG1PX_Score = DumCol DumMoj DumUpl Sep Oct Nov Dec Jan Feb Mar Total2 / AIC VIF CLI NOINT; *CORRB INFLUENCE CLB;
+*run;
+*quit;
+
+
+
+
+proc reg data = wildflower2 outest=WildResults6 plots(label) = (rstudentbyleverage cooksd);
+model LOG1PX_Score = DumCol DumMoj DumUpl LOG1PX_Sep LOG1PX_Oct LOG1PX_Nov LOG1PX_Dec LOG1PX_Jan LOG1PX_Feb LOG1PX_Mar / AIC VIF CLI NOINT; *CORRB INFLUENCE CLB;
+run;
+quit;
+
+
+
+
+
+*Answer some questions about the above output and try to make your own corresponding adjustments
+
+
+
+
+
+*Modelselection;
+
+data train;
+set wildflower;
+if RandNumber > 1/2 then delete;
+run;
+
+*proc print data = train;* run;
+
+
+data test;
+set wildflower;
+if RandNumber < 1/2 then delete;
+run;
+
+*proc print data = test;* run;
+
+
+data train2;
+set wildflower2;
+if RandNumber > 1/2 then delete;
+run;
+
+*proc print data = train2;* run;
+
+
+data test2;
+set wildflower2;
+if RandNumber < 1/2 then delete;
+run;
+
+*proc print data = test2;* run;
+
+
+data train3;
+set wildflower3;
+if RandNumber > 1/2 then delete;
+run;
+
+*proc print data = train3;* run;
+
+
+data test3;
+set wildflower3;
+if RandNumber < 1/2 then delete;
+run;
+
+*proc print data = test3;* run;
+
+
+
+
+
+
+
+
+
+
+
+*ods graphics on;
+proc glmselect data=wildflower
+               seed=1 plots(stepAxis=number)=(criterionPanel ASEPlot CRITERIONPANEL);
+class Region;
+model Score = Region Total Sep Oct Nov Dec Jan Feb Mar Year / selection=LASSO(choose=CV stop=AIC) CVdetails;
+run;
+quit;
+*ods graphics off;
+
+
+*ods graphics on;
+proc glmselect data=wildflower
+               seed=1 plots(stepAxis=number)=(criterionPanel ASEPlot CRITERIONPANEL);
+class Region;
+model Score = Region Total Sep Oct Nov Dec Jan Feb Mar Year / selection=LASSO(choose=AIC stop=CV) CVdetails;
+run;
+quit;
+*ods graphics off;
+
+
+*ods graphics on;
+proc glmselect data=train testdata=test
+               seed=1 plots(stepAxis=number)=(criterionPanel ASEPlot CRITERIONPANEL);
+class Region;
+model Score = Region Total Sep Oct Nov Dec Jan Feb Mar Year / selection=LASSO(choose=CV stop=AIC) CVdetails showpvalues;
+run;
+quit;
+**ods graphics off;
+
+
+
+
+
+
+
+
+*proc glmselect data=train2 testdata=test2
+*               seed=2 plots(stepAxis=number)=(criterionPanel ASEPlot CRITERIONPANEL);
+*class Region;
+*model LOG1PX_Score = Region Total Sep Oct Nov Dec Jan Feb Mar Year / selection=LASSO(choose=CV stop=AIC) CVdetails showpvalues;
+*run;
+*quit;
+
+*proc glmselect data=train3 testdata=test3
+               seed=3 plots(stepAxis=number)=(criterionPanel ASEPlot CRITERIONPANEL);
+*class Region;
+*model LOG1PX_Score = Region Total Sep Oct Nov Dec Jan Feb Mar Year / selection=LASSO(choose=CV stop=AIC) CVdetails;
+*run;
+*quit;
+
+   
+*proc glmselect data=wildflower2 plots=(CriterionPanel ASE ASEPlot) seed=4;
+*     partition fraction(validate=0.3 test=0.2);
+*     class Region; 
+*     model LOG1PX_Score = DumCol DumMoj DumUpl Sep Oct Nov Dec Jan Feb Mar Total Total2
+*     						/ selection=LASSO(choose=AIC stop=AICC) showpvalues;
+*   run;
+
+proc glmselect data=wildflower2 plots=(CriterionPanel ASE ASEPlot) seed=4;
+     partition fraction(validate=0.3 test=0.2);
+     class Region; 
+     model LOG1PX_Score = DumBaj DumCol DumMoj DumUpl LOG1PX_Sep LOG1PX_Oct LOG1PX_Nov LOG1PX_Dec LOG1PX_Jan LOG1PX_Feb LOG1PX_Mar LOG1PX_Total LOG1PX_Total2
+     						/ selection=LASSO(choose=AIC stop=AICC) showpvalues;
+   run;
+   
+
+
+
+proc reg data = wildflower2 outest=WildResults6 plots(label) = (rstudentbyleverage cooksd);
+model LOG1PX_Score = DumBaj DumCol DumMoj DumUpl LOG1PX_Sep LOG1PX_Oct LOG1PX_Nov LOG1PX_Dec LOG1PX_Jan LOG1PX_Feb LOG1PX_Mar / AIC VIF CLI NOINT; *CORRB INFLUENCE CLB;
+run;
+quit;
+
+
+proc sgscatter data=wildflower2;
+matrix LOG1PX_Score LOG1PX_Jan LOG1PX_Feb LOG1PX_Mar LOG1PX_Sep LOG1PX_Oct LOG1PX_Nov LOG1PX_Dec LOG1PX_Total LOG1PX_Total2 / diagonal=(histogram) group=Region;
+run;
+
+
+
+
+
+
+
+
+
