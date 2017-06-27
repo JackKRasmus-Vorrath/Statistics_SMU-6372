@@ -1,0 +1,66 @@
+FILENAME REFFILE '/home/jrasmusvorrath0/MathACT_2.csv';
+
+PROC IMPORT DATAFILE=REFFILE
+	DBMS=CSV
+	OUT=math2;
+	GETNAMES=YES;
+RUN;
+
+PROC CONTENTS DATA=math2; RUN;
+
+proc print data = math2; run;
+
+proc means data=math2 n mean max min range std fw=8;
+class Sex Background;
+var Score;
+output out=meansout2 mean=mean std=std;
+title 'Summary of Math ACT Scores';
+run;
+
+data summarystats2; set meansout2;
+if _TYPE_=0 then delete;
+if _TYPE_=1 then delete;
+if _TYPE_=2 then delete;
+run;
+
+data plottingdata2 (keep=Sex Background mean std newvar); set summarystats2;
+by Sex Background;
+
+newvar=mean;  
+output;                                                                                                                              
+                                                                                                                                        
+newvar=mean - std;                                                                                                                  
+output;                                                                                                                              
+                                                                                                                                        
+newvar=mean + std;                                                                                                                  
+output;                                                                                                                              
+run;  
+
+proc sort data=plottingdata2;
+by Background;
+run;
+
+proc gplot data=plottingdata2;
+title1 'Plot Means with Standard Error Bars from Calculated Data for Groups';  
+
+symbol1 interpol=hiloctj color=vibg line=1;                                                                                          
+symbol2 interpol=hiloctj color=depk line=1;                                                                                          
+                                                                                                                                        
+symbol3 interpol=none color=vibg value=dot height=1.5;                                                                               
+symbol4 interpol=none color=depk value=dot height=1.5;  
+
+axis1 offset=(2,2) ;                                                                                                       
+axis2 label=("Math ACT") order=(0 to 40 by 10) minor=(n=1);
+
+plot NewVar*Background=Sex / vaxis=axis2 haxis=axis1;
+plot2 Mean*Background=Sex / vaxis=axis2 noaxis nolegend;
+run; quit;
+
+proc glm data=math2 PLOTS=(DIAGNOSTICS RESIDUALS);
+class sex background;
+model score= background sex background*sex;
+lsmeans background / pdiff tdiff adjust=bon;
+estimate 'B vs A' background -1 1 0;
+estimate 'C vs A' background -1 0 1;
+estimate 'Male vs Female' sex -1 1;
+run;  
