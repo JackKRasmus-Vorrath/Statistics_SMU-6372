@@ -1,0 +1,66 @@
+FILENAME REFFILE '/home/jrasmusvorrath0/ex1223.csv';
+
+PROC IMPORT DATAFILE=REFFILE
+	DBMS=CSV
+	OUT= esteem;
+	GETNAMES=YES;
+RUN;
+
+PROC CONTENTS DATA= esteem; RUN;
+
+proc print data = esteem; run;
+
+data esteem2; set esteem;
+if Esteem1 = 1 then NewEsteem = 1;
+else NewEsteem = 0;
+if NewEsteem = 1 then NewEsteem2 = "Strong";
+else NewEsteem2 = "NotStrong";
+run;
+
+proc print data = esteem2; run;
+
+/*NewEsteem2 v. Educ* --> more years of Educ results in higher proportion of Strong esteem responses*/
+
+proc sgplot data = esteem2;
+ vbar Educ / group = NewEsteem2;
+ title 'Strong Esteem Frequency by Years of Education';
+run; 
+
+proc freq data=esteem2;
+  tables NewEsteem2 Educ NewEsteem2*Educ / out=FreqCount outexpect sparse;
+run;
+
+proc freq data=esteem2 order = freq;
+*   tables NewEsteem2 Educ*NewEsteem2 / plots=freqplot(type=dot scale = grouppercent);
+   tables Educ NewEsteem2*Educ / plots=freqplot(type=dot scale= grouppercent);
+run;
+
+/*Simple Logistic Regression NewEsteem2|Educ* - tests of global null hypothesis significant at p < .0001*/
+
+proc logistic data=esteem2;
+model NewEsteem2(event='Strong')= Educ / scale=none details lackfit influence;
+output out=myoutput predprobs=I p=probpred resdev=resdev reschi=reschi;
+run;
+
+/*
+
+logit(pi_hat) = -1.6686 + .1456Educ 
+	where Educ = 0 --> exp(-1.6686) = .1885
+
+One unit increase (from 0 to 1) in years of Educ corresponds to an increase in odds of Strong 
+	esteem response by a multiplicative factor of 1.1567.
+	
+	omega_A / omega_B = exp[beta_1(A-B)]
+	
+	where Educ = +1 --> exp[.1456(1-0)] = 1.1567
+	
+A 10 unit increase (from 7 to 17) in years of Educ corresponds to an increase in odds of Strong
+	esteem response by a multiplicative factor of 4.2888.
+	
+	where Educ = +10 --> exp[.1456(17-7)] = 4.2888
+	
+The probability of Strong esteem response from a subject with 10 years of Educ is 
+
+	where Educ = 10 --> exp(-.2126)/[1+exp(-.2126)] = .4470
+	
+*/
